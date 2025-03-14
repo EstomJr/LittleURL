@@ -69,9 +69,9 @@ public class UrlController {
 
     @GetMapping("/stats")
     @Operation(
-            summary = "Recuperar Estatísticas de URL",
+            summary = "Recuperar Estatísticas Globais",
             description = "Fornece informações estatísticas sobre o serviço de encurtamento de URLs, " +
-                    "como o número total de URLs, o total de acessos e outras métricas relacionadas.",
+                    "incluindo totais e detalhes de todas as URLs ativas.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -82,11 +82,10 @@ public class UrlController {
                             responseCode = "500",
                             description = "Erro interno do servidor."
                     )
-            },
-            tags = {"Statistics"}
+            }
     )
     public ResponseEntity<Statistic> getStats() {
-        return ResponseEntity.ok(urlService.getStats());
+        return ResponseEntity.ok(statisticService.getStats());
     }
 
     @GetMapping("/stats/{shortCode}")
