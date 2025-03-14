@@ -1,11 +1,14 @@
 package com.littleurl.model;
 
+import com.littleurl.dto.response.UrlStatsResponseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import java.time.LocalDateTime;
+import org.springframework.data.mongodb.core.mapping.Document;
+import java.util.List;
 
 @Data
 @Schema(description = "Representa informações estatísticas sobre o serviço de encurtamento de URLs.")
+@Document(collection = "statistic_url")
 public class Statistic {
 
     @Schema(description = "O número total de URLs encurtadas.", example = "150")
@@ -16,10 +19,6 @@ public class Statistic {
     private Long activeUrls;
     @Schema(description = "O número total de URLs expiradas.", example = "50")
     private Long expiredUrls;
-    @Schema(description = "Total de acessos da URL específica", example = "100")
-    private Integer urlAccessCount;
-    @Schema(description = "Média de acessos por dia da URL", example = "10.5")
-    private Double averageAccessesPerDay;
-    @Schema(description = "Data de criação da URL", example = "2024-03-20T10:00:00")
-    private LocalDateTime urlCreatedAt;
+    @Schema(description = "Lista de estatísticas das URLs ativas")
+    private List<UrlStatsResponseDto> activeUrlStats;
 }
