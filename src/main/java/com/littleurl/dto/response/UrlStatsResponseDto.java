@@ -15,4 +15,13 @@ public class UrlStatsResponseDto {
     
     @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDateTime urlCreatedAt = LocalDateTime.now();
+    
+    private String shortCode;
+    private String shortUrl;
+    
+    public UrlStatsResponseDto(Integer urlAccessCount, Double averageAccessesPerDay, LocalDateTime urlCreatedAt) {
+        this.urlAccessCount = urlAccessCount;
+        this.averageAccessesPerDay = averageAccessesPerDay;
+        this.urlCreatedAt = urlCreatedAt;
+    }
 } 
