@@ -32,30 +32,30 @@ class StatisticServiceTest {
 
     @Test
     void getUrlStats_ShouldReturnStats() {
-
         String shortCode = "abc123";
         Url url = new Url();
         url.setAccessCount(10);
-        url.setCreatedAt(LocalDateTime.now().minusDays(5));
+        LocalDateTime createdAt = LocalDateTime.now().minusDays(5);
+        url.setCreatedAt(createdAt);
+        url.setShortCode(shortCode);
+        url.setShortUrl("http://localhost:8080/" + shortCode);
         
         when(urlRepository.findByShortCode(anyString())).thenReturn(Optional.of(url));
 
-
         UrlStatsResponseDto stats = statisticService.getUrlStats(shortCode);
-
 
         assertNotNull(stats);
         assertEquals(10, stats.getUrlAccessCount());
         assertEquals(2.0, stats.getAverageAccessesPerDay());
-        assertEquals(url.getCreatedAt(), stats.getUrlCreatedAt());
+        assertEquals(createdAt, stats.getUrlCreatedAt());
+        assertEquals(shortCode, stats.getShortCode());
+        assertEquals("http://localhost:8080/" + shortCode, stats.getShortUrl());
     }
 
     @Test
     void getUrlStats_WhenUrlNotFound_ShouldThrowNotFoundException() {
-
         String shortCode = "nonexistent";
         when(urlRepository.findByShortCode(anyString())).thenReturn(Optional.empty());
-
 
         assertThrows(NotFoundException.class, () -> statisticService.getUrlStats(shortCode));
     }
