@@ -11,8 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UrlService {
@@ -25,8 +25,6 @@ public class UrlService {
 
     @Autowired
     private StatisticService statisticService;
-
-    private Url url;
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -66,9 +64,9 @@ public class UrlService {
     }
 
     public List<UrlDto> getAllUrls() {
-        List<UrlDto> dtos = new ArrayList<>();
-            dtos.add(url.toDto());
-        return dtos;
+        return urlRepository.findAll().stream()
+                .map(Url::toDto)
+                .collect(Collectors.toList());
     }
 
     private String buildShortUrl(String shortCode) {
