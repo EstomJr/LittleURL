@@ -2,7 +2,6 @@ package com.littleurl.service;
 
 import com.littleurl.dto.response.UrlStatsResponseDto;
 import com.littleurl.exception.NotFoundException;
-import com.littleurl.exception.TotalAccessCountException;
 import com.littleurl.model.Statistic;
 import com.littleurl.model.Url;
 import com.littleurl.repository.UrlRepository;
@@ -11,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class StatisticService {
@@ -18,55 +19,61 @@ public class StatisticService {
     @Autowired
     private UrlRepository urlRepository;
 
-    public UrlStatsResponseDto getUrlStats(String shortCode) {
-        Url url = urlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new NotFoundException("URL não encontrada"));
-
-
-        int accessCount = url.getAccessCount() != null ? url.getAccessCount() : 0;
-
-
-        LocalDateTime createdAt = url.getCreatedAt() != null ? url.getCreatedAt() : LocalDateTime.now();
-
-
+    public Statistic getStats() {
         LocalDateTime now = LocalDateTime.now();
-        long daysBetween = Math.max(1, ChronoUnit.DAYS.between(createdAt, now));
-        double averagePerDay = (double) accessCount / daysBetween;
+        List<Url> allUrls = urlRepository.findAll();
+        List<Url> activeUrls = allUrls.stream()
+                .filter(url -> !url.isExpired())
+                .collect(Collectors.toList());
 
-        return new UrlStatsResponseDto(
-            accessCount,
-            Math.round(averagePerDay * 100.0) / 100.0,
-            createdAt
-        );
-    }
+        int totalAccessCount = allUrls.stream()
+                .mapToInt(url -> url.getAccessCount() != null ? url.getAccessCount() : 0)
+                .sum();
 
-    public Statistic getStats(){
+        List<UrlStatsResponseDto> activeUrlStats = activeUrls.stream()
+                .map(url -> {
+                    int accessCount = url.getAccessCount() != null ? url.getAccessCount() : 0;
+                    LocalDateTime createdAt = url.getCreatedAt() != null ? url.getCreatedAt() : now;
+                    long daysBetween = Math.max(1, ChronoUnit.DAYS.between(createdAt, now));
+                    double averagePerDay = (double) accessCount / daysBetween;
+
+                    UrlStatsResponseDto stats = new UrlStatsResponseDto(
+                        accessCount,
+                        Math.round(averagePerDay * 100.0) / 100.0,
+                        createdAt
+                    );
+                    stats.setShortCode(url.getShortCode());
+                    stats.setShortUrl(url.getShortUrl());
+                    return stats;
+                })
+                .collect(Collectors.toList());
+
         Statistic stats = new Statistic();
-
-        Long quantUrls = urlRepository.count();
-        stats.setTotalShortenedUrls(quantUrls);
-
-        Long quantActiveUrls = urlRepository.countByExpiresAtAfter(LocalDateTime.now());
-        stats.setActiveUrls(quantActiveUrls);
-
-        Long quantExpiredUrls = urlRepository.countByExpiresAtBefore(LocalDateTime.now());
-        stats.setExpiredUrls(quantExpiredUrls);
-
-        stats.setTotalRedirects(totalAccessCount());
+        stats.setTotalShortenedUrls((long) allUrls.size());
+        stats.setTotalRedirects((long) totalAccessCount);
+        stats.setActiveUrls((long) activeUrls.size());
+        stats.setExpiredUrls((long) (allUrls.size() - activeUrls.size()));
+        stats.setActiveUrlStats(activeUrlStats);
 
         return stats;
     }
 
-    private Long totalAccessCount() {
-        long totalAccess = 0L;
-        try {
-            for(Url u: urlRepository.findAll()) {
-                totalAccess += u.getAccessCount();
-            }
-        } catch (TotalAccessCountException e) {
-            throw new RuntimeException(e);
-        }
-        return totalAccess;
-    }
+    public UrlStatsResponseDto getUrlStats(String shortCode) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new NotFoundException("URL não encontrada"));
 
+        int accessCount = url.getAccessCount() != null ? url.getAccessCount() : 0;
+        LocalDateTime createdAt = url.getCreatedAt() != null ? url.getCreatedAt() : LocalDateTime.now();
+        long daysBetween = Math.max(1, ChronoUnit.DAYS.between(createdAt, LocalDateTime.now()));
+        double averagePerDay = (double) accessCount / daysBetween;
+
+        UrlStatsResponseDto stats = new UrlStatsResponseDto(
+            accessCount,
+            Math.round(averagePerDay * 100.0) / 100.0,
+            createdAt
+        );
+        stats.setShortCode(url.getShortCode());
+        stats.setShortUrl(url.getShortUrl());
+        return stats;
+    }
 }
